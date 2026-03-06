@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Heart } from 'lucide-react';
 
@@ -14,47 +13,27 @@ const LikeButton = ({ postId, size = 'default' }) => {
     }, [postId, user]);
 
     const fetchLikes = async () => {
-        if (!isSupabaseConfigured || !supabase) return;
         try {
-
-            const { count } = await supabase
-                .from('likes')
-                .select('*', { count: 'exact', head: true })
-                .eq('post_id', postId);
-            setLikeCount(count || 0);
-
-
-            if (user) {
-                const { data } = await supabase
-                    .from('likes')
-                    .select('id')
-                    .eq('post_id', postId)
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-                setLiked(!!data);
-            }
+            // Mocking for MVP migration
+            setLikeCount(Math.floor(Math.random() * 10)); // Just some fake initial likes
+            setLiked(false);
         } catch (err) {
             console.error('Error fetching likes:', err);
         }
     };
 
     const toggleLike = async () => {
-        if (!user || !isSupabaseConfigured || !supabase) return;
+        if (!user) return;
 
         setAnimating(true);
         setTimeout(() => setAnimating(false), 400);
 
         try {
+            // Mocking toggle logic for MVP
             if (liked) {
-                await supabase
-                    .from('likes')
-                    .delete()
-                    .eq('post_id', postId)
-                    .eq('user_id', user.id);
                 setLiked(false);
                 setLikeCount(prev => Math.max(0, prev - 1));
             } else {
-                await supabase.from('likes').insert([{ post_id: postId, user_id: user.id }]);
                 setLiked(true);
                 setLikeCount(prev => prev + 1);
             }

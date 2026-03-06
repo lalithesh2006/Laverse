@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Camera, AtSign, AlignLeft, Check, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const ProfileSetup = ({ onComplete, onSkip }) => {
     const { user, profile, updateProfile } = useAuth();
@@ -35,34 +34,23 @@ const ProfileSetup = ({ onComplete, onSkip }) => {
     };
 
     const handleAvatarUpload = async (event) => {
-        if (!isSupabaseConfigured || !supabase) {
-            alert('Supabase is not configured. Avatar upload is unavailable in demo mode.');
-            return;
-        }
         try {
             setUploading(true);
             const file = event.target.files[0];
             if (!file) return;
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `avatar_${Date.now()}.${fileExt}`;
-            const filePath = `${user.id}/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('post-images')
-                .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('post-images')
-                .getPublicUrl(filePath);
-
-            setFormData({ ...formData, avatar_url: publicUrl });
+            // Mocked for the MVP migration. In a real scenario, you'd send this to your Node API
+            // which would use Multer and upload to S3/Cloudinary.
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const publicUrl = reader.result;
+                setFormData({ ...formData, avatar_url: publicUrl });
+                setUploading(false);
+            };
+            reader.readAsDataURL(file);
         } catch (error) {
             console.error('Error uploading avatar:', error);
             alert('Error uploading avatar: ' + error.message);
-        } finally {
             setUploading(false);
         }
     };

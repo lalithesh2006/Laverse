@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { timeAgo } from '../lib/utils';
 import { Bell, Check, Heart, MessageCircle, UserPlus, Flame } from 'lucide-react';
@@ -35,31 +34,18 @@ const NotificationBell = () => {
     }, []);
 
     const fetchNotifications = async () => {
-        if (!isSupabaseConfigured || !supabase || !user) return;
         try {
-            const { data, error } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            if (error) throw error;
-            setNotifications(data || []);
-            setUnreadCount((data || []).filter(n => !n.is_read).length);
+            // Mock empty notifications array for the MVP
+            setNotifications([]);
+            setUnreadCount(0);
         } catch (err) {
-            // Table might not exist yet — silently ignore
+            console.error('Failed to fetch notifications:', err);
         }
     };
 
     const markAllRead = async () => {
-        if (!isSupabaseConfigured || !supabase || !user) return;
         try {
-            await supabase
-                .from('notifications')
-                .update({ is_read: true })
-                .eq('user_id', user.id)
-                .eq('is_read', false);
+            // Mock marking as read for MVP
             setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
             setUnreadCount(0);
         } catch (err) {

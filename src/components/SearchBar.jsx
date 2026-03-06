@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { api } from '../lib/api';
 import { escapeSearchQuery } from '../lib/utils';
 import { Search, X, Clock, ArrowRight, Loader } from 'lucide-react';
 
@@ -41,19 +41,9 @@ const SearchBar = ({ isOpen, onClose }) => {
     }, [isOpen]);
 
     const searchPosts = async (searchQuery) => {
-        if (!isSupabaseConfigured || !supabase) return;
         setLoading(true);
         try {
-            const safeQuery = escapeSearchQuery(searchQuery);
-            const { data, error } = await supabase
-                .from('posts')
-                .select('id, title, excerpt, category, cover_image, created_at')
-                .eq('published', true)
-                .or(`title.ilike.%${safeQuery}%,content.ilike.%${safeQuery}%,excerpt.ilike.%${safeQuery}%`)
-                .order('created_at', { ascending: false })
-                .limit(8);
-
-            if (error) throw error;
+            const data = await api.posts.getPosts({ search: searchQuery, limit: 8 });
             setResults(data || []);
         } catch (err) {
             console.error('Search error:', err);
@@ -117,17 +107,28 @@ const SearchBar = ({ isOpen, onClose }) => {
                     )}
 
                     {results.map(post => (
-                        <button key={post.id} className="search-result-item" onClick={() => handleSelect(post.id)}>
+                        <button key={post._id} className="search-result-item" onClick={() => handleSelect(post._id)}>
                             {post.cover_image && (
                                 <img src={post.cover_image} alt="" className="search-result-img" />
                             )}
                             <div className="search-result-info">
                                 <h4>{post.title}</h4>
                                 <p>{post.excerpt?.substring(0, 80)}...</p>
-                                <span className="search-result-meta">{post.category} · {new Date(post.created_at).toLocaleDateString()}</span>
+                                <span className="search-result-meta">{post.category} · {new Date(post.createdAt).toLocaleDateString()}</span>
                             </div>
                         </button>
                     ))}
+                    {query.length >= 2 && results.length > 0 && (
+                        <div style={{ textAlign: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                            <button
+                                onClick={() => { onClose(); navigate(`/search?q=${encodeURIComponent(query)}`); }}
+                                className="btn-secondary"
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                            >
+                                See all results for "{query}" <ArrowRight size={14} />
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="search-footer">

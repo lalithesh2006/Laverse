@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { api } from '../lib/api';
 import { estimateReadTime } from '../lib/utils';
 import { BookOpen } from 'lucide-react';
 
@@ -12,20 +12,12 @@ const RelatedPosts = ({ currentPostId, category, tags = [] }) => {
     }, [currentPostId, category]);
 
     const fetchRelated = async () => {
-        if (!isSupabaseConfigured || !supabase) return;
         try {
-            // Fetch posts in same category, excluding current
-            const { data, error } = await supabase
-                .from('posts')
-                .select('id, title, excerpt, cover_image, category, content, created_at, profiles(full_name)')
-                .eq('published', true)
-                .eq('category', category)
-                .neq('id', currentPostId)
-                .order('reads', { ascending: false })
-                .limit(3);
-
-            if (error) throw error;
-            setPosts(data || []);
+            // Fetch all posts, then filter by category locally for the MVP migration
+            const data = await api.posts.getPosts({ category, limit: 4 });
+            // Filter out current post
+            const related = data ? data.filter(p => p._id !== currentPostId).slice(0, 3) : [];
+            setPosts(related);
         } catch (err) {
             console.error('Error fetching related posts:', err);
         }
@@ -40,7 +32,7 @@ const RelatedPosts = ({ currentPostId, category, tags = [] }) => {
             </h3>
             <div className="related-posts-grid">
                 {posts.map(post => (
-                    <Link to={`/story/${post.id}`} key={post.id} className="related-post-card">
+                    <Link to={`/story/${post._id}`} key={post._id} className="related-post-card">
                         {post.cover_image ? (
                             <img src={post.cover_image} alt={post.title} className="related-post-img" />
                         ) : (
@@ -52,7 +44,7 @@ const RelatedPosts = ({ currentPostId, category, tags = [] }) => {
                             <span className="related-post-category">{post.category}</span>
                             <h4>{post.title}</h4>
                             <div className="related-post-meta">
-                                <span>{post.profiles?.full_name || 'Anonymous'}</span>
+                                <span>{post.author_id?.full_name || 'Anonymous'}</span>
                                 <span>·</span>
                                 <span>{estimateReadTime(post.content)} read</span>
                             </div>

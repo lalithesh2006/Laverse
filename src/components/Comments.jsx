@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { timeAgo } from '../lib/utils';
 import { MessageCircle, Reply, Trash2, Send, ChevronDown, ChevronUp } from 'lucide-react';
@@ -19,33 +18,9 @@ const Comments = ({ postId }) => {
     }, [postId]);
 
     const fetchComments = async () => {
-        if (!isSupabaseConfigured || !supabase) { setLoading(false); return; }
         try {
-            const { data, error } = await supabase
-                .from('comments')
-                .select('*, profiles(username, full_name, avatar_url)')
-                .eq('post_id', postId)
-                .order('created_at', { ascending: true });
-
-            if (error) throw error;
-
-            // Build threaded structure
-            const rootComments = [];
-            const childMap = {};
-            (data || []).forEach(c => {
-                c.replies = [];
-                if (c.parent_id) {
-                    if (!childMap[c.parent_id]) childMap[c.parent_id] = [];
-                    childMap[c.parent_id].push(c);
-                } else {
-                    rootComments.push(c);
-                }
-            });
-            rootComments.forEach(c => {
-                c.replies = childMap[c.id] || [];
-            });
-
-            setComments(rootComments);
+            // Mock empty comments array for MVP
+            setComments([]);
         } catch (err) {
             console.error('Error fetching comments:', err);
         } finally {
@@ -59,21 +34,39 @@ const Comments = ({ postId }) => {
 
         setSubmitting(true);
         try {
-            const { error } = await supabase.from('comments').insert([{
+            // Mock adding a comment/reply
+            const newMockComment = {
+                id: Date.now().toString(),
                 post_id: postId,
                 author_id: user.id,
                 parent_id: parentId,
-                content: content.trim()
-            }]);
-            if (error) throw error;
+                content: content.trim(),
+                created_at: new Date().toISOString(),
+                profiles: profile,
+                replies: []
+            };
 
             if (parentId) {
+                // Find parent and add reply
+                setComments(prev => {
+                    const addReplyToNode = (nodes) => {
+                        return nodes.map(node => {
+                            if (node.id === parentId) {
+                                return { ...node, replies: [...(node.replies || []), newMockComment] };
+                            } else if (node.replies) {
+                                return { ...node, replies: addReplyToNode(node.replies) };
+                            }
+                            return node;
+                        });
+                    };
+                    return addReplyToNode(prev);
+                });
                 setReplyContent('');
                 setReplyingTo(null);
             } else {
+                setComments(prev => [...prev, newMockComment]);
                 setNewComment('');
             }
-            await fetchComments();
         } catch (err) {
             console.error('Error adding comment:', err);
         } finally {
@@ -84,9 +77,15 @@ const Comments = ({ postId }) => {
     const handleDelete = async (commentId) => {
         if (!confirm('Delete this comment?')) return;
         try {
-            const { error } = await supabase.from('comments').delete().eq('id', commentId);
-            if (error) throw error;
-            await fetchComments();
+            setComments(prev => {
+                const removeNode = (nodes) => {
+                    return nodes.filter(n => n.id !== commentId).map(n => ({
+                        ...n,
+                        replies: n.replies ? removeNode(n.replies) : []
+                    }));
+                };
+                return removeNode(prev);
+            });
         } catch (err) {
             console.error('Error deleting comment:', err);
         }

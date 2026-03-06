@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { api } from '../lib/api';
 import { estimateReadTime } from '../lib/utils';
 import { Calendar, BookOpen, ChevronDown, ChevronUp, Clock, Eye } from 'lucide-react';
 
@@ -28,15 +28,8 @@ const ArchivesPage = () => {
     }, [location.search]);
 
     const fetchPosts = async () => {
-        if (!isSupabaseConfigured || !supabase) { setLoading(false); return; }
         try {
-            const { data, error } = await supabase
-                .from('posts')
-                .select('id, title, excerpt, category, cover_image, content, reads, created_at, profiles(full_name)')
-                .eq('published', true)
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-
+            const data = await api.posts.getPosts();
             const fetchedPosts = data || [];
             setPosts(fetchedPosts);
 
@@ -56,7 +49,7 @@ const ArchivesPage = () => {
 
     const groupedByMonth = {};
     filteredPosts.forEach(post => {
-        const date = new Date(post.created_at);
+        const date = new Date(post.createdAt);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
         if (!groupedByMonth[key]) groupedByMonth[key] = { label, posts: [] };
@@ -129,10 +122,10 @@ const ArchivesPage = () => {
                                 {expandedMonths[key] && (
                                     <div className="archive-month-posts">
                                         {monthPosts.map(post => (
-                                            <Link to={`/story/${post.id}`} key={post.id} className="archive-post-item">
+                                            <Link to={`/story/${post._id}`} key={post._id} className="archive-post-item">
                                                 <div className="archive-post-date">
-                                                    <span className="archive-day">{new Date(post.created_at).getDate()}</span>
-                                                    <span className="archive-month-short">{new Date(post.created_at).toLocaleDateString('en-US', { month: 'short' })}</span>
+                                                    <span className="archive-day">{new Date(post.createdAt).getDate()}</span>
+                                                    <span className="archive-month-short">{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short' })}</span>
                                                 </div>
                                                 {post.cover_image ? (
                                                     <img src={post.cover_image} alt="" className="archive-post-img" />
@@ -144,7 +137,7 @@ const ArchivesPage = () => {
                                                     <h3>{post.title}</h3>
                                                     {post.excerpt && <p>{post.excerpt}</p>}
                                                     <div className="archive-post-meta">
-                                                        <span>{post.profiles?.full_name || 'Anonymous'}</span>
+                                                        <span>{post.author_id?.full_name || 'Anonymous'}</span>
                                                         <span>·</span>
                                                         <span><Clock size={12} /> {estimateReadTime(post.content)} read</span>
                                                         {post.reads > 0 && <><span>·</span><span><Eye size={12} /> {post.reads}</span></>}

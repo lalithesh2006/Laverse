@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { api } from '../lib/api';
 import { timeAgo } from '../lib/utils';
 import { Newspaper, BookOpen, ArrowRight } from 'lucide-react';
 
@@ -13,19 +13,8 @@ const BlogPage = () => {
     }, []);
 
     const fetchPosts = async () => {
-        if (!isSupabaseConfigured || !supabase) {
-            setLoading(false);
-            return;
-        }
         try {
-            const { data, error } = await supabase
-                .from('posts')
-                .select('id, title, excerpt, category, cover_image, created_at, reads, profiles(username, full_name)')
-                .eq('published', true)
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            if (error) throw error;
+            const data = await api.posts.getPosts({ limit: 20 });
             setPosts(data || []);
         } catch (err) {
             console.error('Error fetching blog posts:', err);
@@ -63,7 +52,7 @@ const BlogPage = () => {
                 ) : (
                     <div className="blog-posts-grid">
                         {posts.map(post => (
-                            <Link to={`/story/${post.id}`} key={post.id} className="blog-post-card">
+                            <Link to={`/story/${post._id}`} key={post._id} className="blog-post-card">
                                 {post.cover_image && (
                                     <div className="blog-post-image">
                                         <img src={post.cover_image} alt={post.title} />
@@ -72,13 +61,13 @@ const BlogPage = () => {
                                 <div className="blog-post-body">
                                     <div className="blog-post-meta">
                                         <span className="blog-post-category">{post.category || 'General'}</span>
-                                        <span className="blog-post-date">{timeAgo(post.created_at)}</span>
+                                        <span className="blog-post-date">{timeAgo(post.createdAt)}</span>
                                     </div>
                                     <h3>{post.title}</h3>
                                     <p>{post.excerpt?.substring(0, 120)}...</p>
                                     <div className="blog-post-footer">
                                         <span className="blog-post-author">
-                                            by {post.profiles?.full_name || post.profiles?.username || 'Anonymous'}
+                                            by {post.author_id?.full_name || post.author_id?.username || 'Anonymous'}
                                         </span>
                                         <span className="blog-read-more">
                                             Read <ArrowRight size={14} />

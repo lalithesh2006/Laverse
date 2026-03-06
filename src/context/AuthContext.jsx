@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { api } from '../lib/api';
 
 const AuthContext = createContext({});
 
@@ -10,73 +10,43 @@ export const AuthProvider = ({ children }) => {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchProfile = async (userId) => {
-        if (!isSupabaseConfigured || !supabase) return null;
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-        if (error) {
-            console.error('Error fetching profile:', error);
-            return null;
-        }
-        return data;
-    };
-
     const updateProfile = async (updates) => {
-        if (!isSupabaseConfigured || !supabase || !user) return;
-        const { data, error } = await supabase
-            .from('profiles')
-            .update({ ...updates, updated_at: new Date().toISOString() })
-            .eq('id', user.id)
-            .select()
-            .single();
-        if (error) throw error;
-        setProfile(data);
-        return data;
+        if (!user) return;
+        const updatedProfile = await api.auth.updateProfile(updates);
+        setProfile(updatedProfile);
+        return updatedProfile;
     };
 
     const signOut = async () => {
-        if (!isSupabaseConfigured || !supabase) {
-            setUser(null);
-            setProfile(null);
-            return;
-        }
-        await supabase.auth.signOut();
+        localStorage.removeItem('laverse_token');
         setUser(null);
         setProfile(null);
     };
 
+    const signIn = (userData, token) => {
+        localStorage.setItem('laverse_token', token);
+        setUser({ id: userData._id, email: userData.email });
+        setProfile(userData);
+    };
+
     useEffect(() => {
-        if (!isSupabaseConfigured || !supabase) {
+        const token = localStorage.getItem('laverse_token');
+        if (!token) {
             setLoading(false);
             return;
         }
 
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchProfile(session.user.id).then(setProfile);
-            }
-            setLoading(false);
-        });
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                setUser(session?.user ?? null);
-                if (session?.user) {
-                    const p = await fetchProfile(session.user.id);
-                    setProfile(p);
-                } else {
-                    setProfile(null);
-                }
-            }
-        );
-
-        return () => subscription.unsubscribe();
+        api.auth.getProfile()
+            .then(userData => {
+                setUser({ id: userData._id, email: userData.email });
+                setProfile(userData);
+            })
+            .catch(() => {
+                localStorage.removeItem('laverse_token');
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     }, []);
 
     const value = {
@@ -84,8 +54,8 @@ export const AuthProvider = ({ children }) => {
         profile,
         loading,
         signOut,
+        signIn,
         updateProfile,
-        isSupabaseConfigured
     };
 
     return (

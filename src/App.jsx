@@ -20,6 +20,7 @@ import AboutPage from './pages/AboutPage'
 import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import BlogPage from './pages/BlogPage'
+import SearchPage from './pages/SearchPage'
 import { useAuth } from './context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import './App.css'
@@ -115,6 +116,7 @@ function App() {
               <Route path="/privacy" element={<AnimatedPage><PrivacyPage /></AnimatedPage>} />
               <Route path="/terms" element={<AnimatedPage><TermsPage /></AnimatedPage>} />
               <Route path="/blog" element={<AnimatedPage><BlogPage /></AnimatedPage>} />
+              <Route path="/search" element={<AnimatedPage><SearchPage /></AnimatedPage>} />
               <Route path="*" element={<AnimatedPage><NotFoundPage /></AnimatedPage>} />
             </Routes>
           </AnimatePresence>

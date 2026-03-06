@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { api } from '../lib/api';
 import { PenTool, BookOpen, Eye, Settings, LogOut, Trash2, Edit3, Plus, Bookmark, Shield } from 'lucide-react';
 import ReadingStreak from '../components/ReadingStreak';
 import UserBadges from '../components/UserBadges';
@@ -48,19 +48,13 @@ const Dashboard = () => {
     }, [profile]);
 
     const fetchUserPosts = async () => {
-        if (!isSupabaseConfigured || !supabase || !user) {
+        if (!user) {
             setLoading(false);
             return;
         }
 
         try {
-            const { data, error } = await supabase
-                .from('posts')
-                .select('*')
-                .eq('author_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await api.posts.getUserPosts(user.id);
             setPosts(data || []);
         } catch (err) {
             console.error('Error fetching posts:', err);
@@ -70,42 +64,26 @@ const Dashboard = () => {
     };
 
     const fetchBookmarks = async () => {
-        if (!isSupabaseConfigured || !supabase || !user) return;
+        if (!user) return;
         try {
-            const { data } = await supabase
-                .from('bookmarks')
-                .select('post_id, posts(id, title, cover_image, category, reads, created_at, excerpt, published)')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-            setBookmarks(data?.map(b => b.posts).filter(Boolean) || []);
+            // Bookmarks are out of scope for the current MVP migration logic
+            setBookmarks([]);
         } catch (err) {
             console.error('Error fetching bookmarks:', err);
         }
     };
 
     const fetchUserStats = async () => {
-        if (!isSupabaseConfigured || !supabase || !user) return;
-        try {
-            const [{ count: commentCount }, { count: likeCount }] = await Promise.all([
-                supabase.from('comments').select('*', { count: 'exact', head: true }).eq('author_id', user.id),
-                supabase.from('likes').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
-            ]);
-            setUserStats({ comments: commentCount || 0, likes: likeCount || 0 });
-        } catch (err) {
-            console.error('Error fetching user stats:', err);
-        }
+        if (!user) return;
+        // Comment/like stats are out of scope for the current MVP migration logic
+        setUserStats({ comments: 0, likes: 0 });
     };
 
     const fetchAllPosts = async () => {
-        if (!isSupabaseConfigured || !supabase || !profile?.is_admin) return;
+        if (!profile?.is_admin) return;
         setLoadingAdmin(true);
         try {
-            const { data, error } = await supabase
-                .from('posts')
-                .select('*, profiles!inner(username, full_name, avatar_url)')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await api.posts.getPosts();
             setAdminPosts(data || []);
         } catch (err) {
             console.error('Error fetching all posts:', err);
@@ -124,14 +102,9 @@ const Dashboard = () => {
         if (!confirm('Are you sure you want to delete this post?')) return;
 
         try {
-            const { error } = await supabase
-                .from('posts')
-                .delete()
-                .eq('id', postId);
-
-            if (error) throw error;
-            setPosts(posts.filter(p => p.id !== postId));
-            setAdminPosts(adminPosts.filter(p => p.id !== postId));
+            await api.posts.delete(postId);
+            setPosts(posts.filter(p => p._id !== postId));
+            setAdminPosts(adminPosts.filter(p => p._id !== postId));
         } catch (err) {
             console.error('Error deleting post:', err);
         }
@@ -152,29 +125,23 @@ const Dashboard = () => {
             const file = event.target.files[0];
             if (!file) return;
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `avatar_${Date.now()}.${fileExt}`;
-            const filePath = `${user.id}/${fileName}`;
+            // Normally this would be handled via a custom express file upload route using Multer directly to S3 or a comparable store
+            // We mock it for the migration phase to avoid requiring object block storage.
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const publicUrl = reader.result;
+                const updatedProfileForm = { ...profileForm, avatar_url: publicUrl };
+                setProfileForm(updatedProfileForm);
 
-            const { error: uploadError } = await supabase.storage
-                .from('post-images')
-                .upload(filePath, file);
+                // Auto-save the avatar change directly when uploaded
+                await updateProfile({ avatar_url: publicUrl });
+                setUploadingAvatar(false);
+            };
+            reader.readAsDataURL(file);
 
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('post-images')
-                .getPublicUrl(filePath);
-
-            const updatedProfileForm = { ...profileForm, avatar_url: publicUrl };
-            setProfileForm(updatedProfileForm);
-
-            // Auto-save the avatar change directly when uploaded
-            await updateProfile({ avatar_url: publicUrl });
         } catch (error) {
             console.error('Error uploading avatar:', error);
             alert('Error uploading avatar: ' + error.message);
-        } finally {
             setUploadingAvatar(false);
         }
     };
@@ -325,7 +292,7 @@ const Dashboard = () => {
                             ) : (
                                 <div className="posts-list">
                                     {posts.map(post => (
-                                        <div key={post.id} className="post-list-item">
+                                        <div key={post._id} className="post-list-item">
                                             <div className="post-list-image">
                                                 {post.cover_image ? (
                                                     <img src={post.cover_image} alt={post.title} />
@@ -352,15 +319,15 @@ const Dashboard = () => {
                                                 </span>
                                             </div>
                                             <div className="post-list-actions">
-                                                <Link to={`/write/${post.id}`} className="btn-icon" title="Edit">
+                                                <Link to={`/write/${post._id}`} className="btn-icon" title="Edit">
                                                     <Edit3 size={16} />
                                                 </Link>
                                                 {post.published && (
-                                                    <Link to={`/story/${post.id}`} className="btn-icon" title="View">
+                                                    <Link to={`/story/${post._id}`} className="btn-icon" title="View">
                                                         <Eye size={16} />
                                                     </Link>
                                                 )}
-                                                <button className="btn-icon btn-danger" title="Delete" onClick={() => handleDeletePost(post.id)}>
+                                                <button className="btn-icon btn-danger" title="Delete" onClick={() => handleDeletePost(post._id)}>
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
@@ -381,7 +348,7 @@ const Dashboard = () => {
                             ) : (
                                 <div className="posts-list">
                                     {bookmarks.map(post => (
-                                        <Link key={post.id} to={`/story/${post.id}`} className="post-list-item bookmark-item">
+                                        <Link key={post._id} to={`/story/${post._id}`} className="post-list-item bookmark-item">
                                             <div className="post-list-image">
                                                 {post.cover_image ? (
                                                     <img src={post.cover_image} alt={post.title} />
@@ -415,7 +382,7 @@ const Dashboard = () => {
                             ) : (
                                 <div className="posts-list">
                                     {adminPosts.map(post => (
-                                        <div key={post.id} className="post-list-item">
+                                        <div key={post._id} className="post-list-item">
                                             <div className="post-list-image">
                                                 {post.cover_image ? (
                                                     <img src={post.cover_image} alt={post.title} />
@@ -440,10 +407,10 @@ const Dashboard = () => {
                                                 </span>
                                             </div>
                                             <div className="post-list-actions">
-                                                <Link to={`/story/${post.id}`} className="btn-icon" title="View">
+                                                <Link to={`/story/${post._id}`} className="btn-icon" title="View">
                                                     <Eye size={16} />
                                                 </Link>
-                                                <button className="btn-icon btn-danger" title="Delete" onClick={() => handleDeletePost(post.id)}>
+                                                <button className="btn-icon btn-danger" title="Delete" onClick={() => handleDeletePost(post._id)}>
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>

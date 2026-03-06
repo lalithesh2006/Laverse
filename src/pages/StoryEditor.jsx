@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { renderMarkdown, estimateReadTime } from '../lib/utils';
+import { api } from '../lib/api';
+import { estimateReadTime } from '../lib/utils';
 import TagInput from '../components/TagInput';
 import ReadabilityScore from '../components/ReadabilityScore';
 import ConfettiCelebration from '../components/ConfettiCelebration';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
-    Image, X, ArrowLeft, Eye, Send, Save, Calendar,
-    Bold, Italic, Heading1, Heading2, Heading3,
-    List, ListOrdered, Quote, Link as LinkIcon, Minus, Code, Wand2
+    Image, X, ArrowLeft, Eye, Send, Save, Calendar, Wand2
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -60,37 +60,32 @@ const StoryEditor = () => {
     }, [form.content]);
 
     const loadPost = async (postId) => {
-        if (!isSupabaseConfigured || !supabase) return;
-        const { data, error } = await supabase.from('posts').select('*').eq('id', postId).single();
-        if (error || !data || data.author_id !== user.id) { navigate('/dashboard'); return; }
+        try {
+            const data = await api.posts.getPost(postId);
+            if (!data || data.author_id._id !== user.id) { navigate('/dashboard'); return; }
 
-        setForm({
-            title: data.title || '', content: data.content || '', excerpt: data.excerpt || '',
-            cover_image: data.cover_image || '', category: data.category || 'Personal'
-        });
-        setCoverPreview(data.cover_image || '');
-        if (data.scheduled_at) setScheduledAt(new Date(data.scheduled_at).toISOString().slice(0, 16));
-
-        // Fetch tags
-        const { data: tagData } = await supabase
-            .from('post_tags')
-            .select('tags(name)')
-            .eq('post_id', postId);
-        setTags(tagData?.map(t => t.tags.name) || []);
+            setForm({
+                title: data.title || '', content: data.content || '', excerpt: data.excerpt || '',
+                cover_image: data.cover_image || '', category: data.category || 'Personal'
+            });
+            setCoverPreview(data.cover_image || '');
+            if (data.scheduled_at) setScheduledAt(new Date(data.scheduled_at).toISOString().slice(0, 16));
+            // Tags loading would require a new API endpoint, omitting for now
+        } catch (error) {
+            navigate('/dashboard');
+        }
     };
 
-    const uploadImage = async (file, folder = 'covers') => {
-        if (!isSupabaseConfigured || !supabase) {
-            setError('Supabase is not configured.');
-            return null;
-        }
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${folder}/${Date.now()}.${fileExt}`;
-        const { data, error } = await supabase.storage
-            .from('post-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
-        if (error) { setError('Upload failed: ' + error.message); return null; }
-        const { data: urlData } = supabase.storage.from('post-images').getPublicUrl(data.path);
-        return urlData.publicUrl;
+    const uploadImage = async (file) => {
+        // Omitting image upload to Supabase since we are migrating away from Supabase.
+        // In a real scenario, this would post to a custom Express endpoint (e.g. /api/upload)
+        // For now, we'll return a placeholder or use base64 (Quill handles base64 natively!)
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
     };
 
     const handleCoverUpload = async (e) => {
@@ -106,12 +101,7 @@ const StoryEditor = () => {
     };
 
     const handleContentImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        setUploadingContent(true);
-        const url = await uploadImage(file, 'content');
-        setUploadingContent(false);
-        if (url) insertText(`\n![${file.name}](${url})\n`);
+        // Handled natively by Quill now
     };
 
     const handleGenerateExcerpt = async () => {
@@ -164,62 +154,8 @@ const StoryEditor = () => {
         }
     };
 
-    const insertText = (text, wrap = false, wrapEnd = '') => {
-        const textarea = contentRef.current;
-        if (!textarea) { setForm(prev => ({ ...prev, content: prev.content + text })); return; }
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const selected = form.content.substring(start, end);
-        const before = form.content.substring(0, start);
-        const after = form.content.substring(end);
-        let newContent, newCursorPos;
-        if (wrap && selected) {
-            newContent = before + text + selected + (wrapEnd || text) + after;
-            newCursorPos = start + text.length + selected.length + (wrapEnd || text).length;
-        } else if (wrap) {
-            newContent = before + text + (wrapEnd || text) + after;
-            newCursorPos = start + text.length;
-        } else {
-            newContent = before + text + after;
-            newCursorPos = start + text.length;
-        }
-        setForm(prev => ({ ...prev, content: newContent }));
-        setTimeout(() => { textarea.focus(); textarea.setSelectionRange(newCursorPos, newCursorPos); }, 0);
-    };
-
-    const toolbarActions = [
-        { icon: Bold, label: 'Bold', action: () => insertText('**', true, '**') },
-        { icon: Italic, label: 'Italic', action: () => insertText('*', true, '*') },
-        { type: 'divider' },
-        { icon: Heading1, label: 'Heading 1', action: () => insertText('\n# ') },
-        { icon: Heading2, label: 'Heading 2', action: () => insertText('\n## ') },
-        { icon: Heading3, label: 'Heading 3', action: () => insertText('\n### ') },
-        { type: 'divider' },
-        { icon: List, label: 'Bullet List', action: () => insertText('\n- ') },
-        { icon: ListOrdered, label: 'Numbered List', action: () => insertText('\n1. ') },
-        { icon: Quote, label: 'Blockquote', action: () => insertText('\n> ') },
-        { icon: Code, label: 'Code', action: () => insertText('`', true, '`') },
-        { icon: Minus, label: 'Divider', action: () => insertText('\n\n---\n\n') },
-        { type: 'divider' },
-        { icon: LinkIcon, label: 'Link', action: () => insertText('[', true, '](url)') },
-        { icon: Image, label: 'Image', action: () => contentImageRef.current?.click(), loading: uploadingContent },
-    ];
-
     const saveTags = async (postId) => {
-        if (!isSupabaseConfigured || !supabase) return;
-        // Remove existing tags
-        await supabase.from('post_tags').delete().eq('post_id', postId);
-        // Add new tags
-        for (const tagName of tags) {
-            let { data: tagData } = await supabase.from('tags').select('id').eq('name', tagName).single();
-            if (!tagData) {
-                const { data } = await supabase.from('tags').insert([{ name: tagName, slug: tagName.replace(/\s+/g, '-') }]).select().single();
-                tagData = data;
-            }
-            if (tagData) {
-                await supabase.from('post_tags').insert([{ post_id: postId, tag_id: tagData.id }]);
-            }
-        }
+        // Tag saving API to be implemented
     };
 
     const handleSave = async (publish = false) => {
@@ -230,33 +166,26 @@ const StoryEditor = () => {
         setError('');
 
         try {
-            if (!isSupabaseConfigured || !supabase) { setError('Supabase not configured.'); return; }
-
             const postData = {
                 title: form.title,
                 content: form.content,
-                excerpt: form.excerpt || form.content.replace(/[#*\[\]!`>-]/g, '').substring(0, 150).trim() + '...',
+                excerpt: form.excerpt || form.content.replace(/<[^>]+>/g, '').substring(0, 150).trim() + '...',
                 cover_image: form.cover_image,
                 category: form.category,
                 published: publish && !scheduledAt,
                 scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
-                published_at: publish && !scheduledAt ? new Date().toISOString() : null,
-                author_id: user.id,
-                updated_at: new Date().toISOString()
+                published_at: publish && !scheduledAt ? new Date().toISOString() : null
             };
 
             let postId = id;
             if (id) {
-                const { error: err } = await supabase.from('posts').update(postData).eq('id', id);
-                if (err) throw err;
+                await api.posts.update(id, postData);
             } else {
-                const { data, error: err } = await supabase.from('posts').insert([postData]).select().single();
-                if (err) throw err;
-                postId = data.id;
+                const data = await api.posts.create(postData);
+                postId = data._id;
             }
 
-            // Save tags
-            await saveTags(postId);
+            // Save tags missing logic for custom backend, omitted for now
 
             const msg = scheduledAt ? `Scheduled for ${new Date(scheduledAt).toLocaleString()} 📅` :
                 publish ? 'Published! 🎉' : 'Draft saved ✓';
@@ -335,7 +264,7 @@ const StoryEditor = () => {
                             <div className="preview-tags">{tags.map(t => <span key={t} className="story-tag">{t}</span>)}</div>
                         )}
                         {form.excerpt && <p className="preview-excerpt">{form.excerpt}</p>}
-                        <div className="preview-content rendered-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(form.content) }} />
+                        <div className="preview-content rendered-content ql-editor" dangerouslySetInnerHTML={{ __html: form.content }} />
                     </div>
                 ) : (
                     <>
@@ -391,21 +320,15 @@ const StoryEditor = () => {
                         {/* Tags */}
                         <TagInput selectedTags={tags} onChange={setTags} />
 
-                        {/* Toolbar */}
-                        <div className="content-toolbar">
-                            {toolbarActions.map((item, i) =>
-                                item.type === 'divider' ? <span key={i} className="toolbar-divider" /> : (
-                                    <button key={i} className="toolbar-btn" onClick={item.action} title={item.label} disabled={item.loading}>
-                                        {item.loading ? <div className="spinner-sm" /> : <item.icon size={16} />}
-                                    </button>
-                                )
-                            )}
-                            <input ref={contentImageRef} type="file" accept="image/*" hidden onChange={handleContentImageUpload} />
+                        {/* React Quill Editor */}
+                        <div className="editor-content-wrapper" style={{ marginTop: '20px', minHeight: '600px' }}>
+                            <ReactQuill
+                                theme="snow"
+                                value={form.content}
+                                onChange={(val) => setForm({ ...form, content: val })}
+                                style={{ height: '550px' }}
+                            />
                         </div>
-
-                        <textarea ref={contentRef} className="editor-content"
-                            placeholder="Tell your story...&#10;&#10;Use **bold**, *italic*, # Heading, - lists, > quotes, [links](url)&#10;Use the toolbar above for formatting and images."
-                            value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} />
 
                         {/* Readability Analysis */}
                         <ReadabilityScore content={form.content} />

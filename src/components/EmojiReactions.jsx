@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
 const EMOJIS = [
@@ -22,48 +21,24 @@ const EmojiReactions = ({ postId }) => {
     }, [postId, user]);
 
     const fetchReactions = async () => {
-        if (!isSupabaseConfigured || !supabase) return;
         try {
-            // Get all reactions for this post
-            const { data, error } = await supabase
-                .from('reactions')
-                .select('emoji, user_id')
-                .eq('post_id', postId);
-
-            if (error) throw error;
-
-            // Count by emoji
-            const counts = {};
-            const myReactions = new Set();
-            (data || []).forEach(r => {
-                counts[r.emoji] = (counts[r.emoji] || 0) + 1;
-                if (user && r.user_id === user.id) {
-                    myReactions.add(r.emoji);
-                }
-            });
-            setReactions(counts);
-            setUserReactions(myReactions);
+            // Mock empty reactions for MVP
+            setReactions({});
+            setUserReactions(new Set());
         } catch (err) {
             console.error('Error fetching reactions:', err);
         }
     };
 
     const toggleReaction = async (emoji) => {
-        if (!user || !isSupabaseConfigured || !supabase) return;
+        if (!user) return;
 
         setAnimatingEmoji(emoji);
         setTimeout(() => setAnimatingEmoji(null), 500);
 
         try {
             if (userReactions.has(emoji)) {
-                // Remove reaction
-                await supabase
-                    .from('reactions')
-                    .delete()
-                    .eq('post_id', postId)
-                    .eq('user_id', user.id)
-                    .eq('emoji', emoji);
-
+                // Remove reaction (mocked)
                 setUserReactions(prev => {
                     const next = new Set(prev);
                     next.delete(emoji);
@@ -74,11 +49,7 @@ const EmojiReactions = ({ postId }) => {
                     [emoji]: Math.max(0, (prev[emoji] || 1) - 1)
                 }));
             } else {
-                // Add reaction
-                await supabase
-                    .from('reactions')
-                    .insert([{ post_id: postId, user_id: user.id, emoji }]);
-
+                // Add reaction (mocked)
                 setUserReactions(prev => new Set([...prev, emoji]));
                 setReactions(prev => ({
                     ...prev,

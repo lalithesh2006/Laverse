@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { renderMarkdown, estimateReadTime } from '../lib/utils';
-import { ArrowLeft, Clock, Eye, BookOpen, Tag, Trash2 } from 'lucide-react';
+import { estimateReadTime } from '../lib/utils';
+import { ArrowLeft, Clock, Eye, BookOpen, Tag, Trash2, Highlighter, Twitter } from 'lucide-react';
 import Comments from '../components/Comments';
 import LikeButton from '../components/LikeButton';
 import BookmarkButton from '../components/BookmarkButton';
@@ -28,6 +28,76 @@ const StoryPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+    // Text Highlighting State
+    const [selectionRect, setSelectionRect] = useState(null);
+    const [selectedText, setSelectedText] = useState('');
+    const [highlights, setHighlights] = useState([]); // Array of { id, text, rect, top, left, width, height }
+
+    // Highlight Tooltip positioning
+    useEffect(() => {
+        const handleSelection = () => {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+                setSelectionRect(null);
+                setSelectedText('');
+                return;
+            }
+
+            const text = selection.toString().trim();
+            if (!text || text.length < 3) {
+                setSelectionRect(null);
+                setSelectedText('');
+                return;
+            }
+
+            // check if selection is inside .story-body
+            const range = selection.getRangeAt(0);
+            const container = range.commonAncestorContainer;
+            if (container.nodeType === Node.TEXT_NODE ? !container.parentElement.closest('.story-body') : !container.closest('.story-body')) {
+                setSelectionRect(null);
+                return;
+            }
+
+            const rect = range.getBoundingClientRect();
+            setSelectionRect({
+                top: rect.top + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width,
+                height: rect.height
+            });
+            setSelectedText(text);
+        };
+
+        document.addEventListener('mouseup', handleSelection);
+        return () => document.removeEventListener('mouseup', handleSelection);
+    }, []);
+
+    const handleApplyHighlight = () => {
+        if (!selectionRect || !selectedText) return;
+
+        // Save the highlight to our local array just for session visual
+        const newHighlight = {
+            id: Date.now(),
+            text: selectedText,
+            ...selectionRect
+        };
+        setHighlights(prev => [...prev, newHighlight]);
+
+        // Clear selection
+        window.getSelection()?.removeAllRanges();
+        setSelectionRect(null);
+        setSelectedText('');
+    };
+
+    const handleShareHighlight = () => {
+        if (!selectedText) return;
+        const text = encodeURIComponent(`"${selectedText}" — via La'verse`);
+        const url = encodeURIComponent(window.location.href);
+        window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+        window.getSelection()?.removeAllRanges();
+        setSelectionRect(null);
+    };
+
     useEffect(() => {
         fetchPost();
     }, [id]);
@@ -40,61 +110,15 @@ const StoryPage = () => {
     }, [post]);
 
     const fetchPost = async () => {
-        if (!isSupabaseConfigured || !supabase) {
-            setError('Supabase is not configured.');
-            setLoading(false);
-            return;
-        }
-
         try {
-            let postData = null;
+            const data = await api.posts.getPost(id);
+            if (!data) throw new Error("Story not found");
 
-            const { data, error: fetchErr } = await supabase
-                .from('posts')
-                .select('*, profiles(username, full_name, avatar_url, bio)')
-                .eq('id', id)
-                .single();
+            setPost(data);
+            setAuthor(data.author_id);
+            setTags([]); // Custom API currently doesn't fetch tags in this implementation
 
-            if (fetchErr) {
-                const { data: fallback, error: fallbackErr } = await supabase
-                    .from('posts')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
-
-                if (fallbackErr) throw fallbackErr;
-                postData = fallback;
-            } else {
-                postData = data;
-                setAuthor(data.profiles);
-            }
-
-            setPost(postData);
-
-            if (!postData.profiles && postData.author_id) {
-                const { data: profileData } = await supabase
-                    .from('profiles')
-                    .select('username, full_name, avatar_url, bio')
-                    .eq('id', postData.author_id)
-                    .single();
-                if (profileData) setAuthor(profileData);
-            }
-
-            const { data: tagData } = await supabase
-                .from('post_tags')
-                .select('tags(name, slug)')
-                .eq('post_id', id);
-            setTags(tagData?.map(t => t.tags) || []);
-
-            try {
-                await supabase.rpc('increment_reads', { post_id: id });
-            } catch {
-                await supabase.from('posts')
-                    .update({ reads: (postData.reads || 0) + 1 })
-                    .eq('id', id);
-            }
-
-            trackReading(postData);
+            trackReading(data);
         } catch (err) {
             console.error('Error fetching post:', err);
             setError(err?.message || 'Story not found.');
@@ -126,8 +150,7 @@ const StoryPage = () => {
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this post?')) return;
         try {
-            const { error: deleteErr } = await supabase.from('posts').delete().eq('id', post.id);
-            if (deleteErr) throw deleteErr;
+            await api.posts.delete(post._id);
             navigate('/');
         } catch (err) {
             alert('Failed to delete post: ' + err.message);
@@ -204,7 +227,60 @@ const StoryPage = () => {
                     <ReadingToolbar title={post.title} content={post.content} />
                     <TableOfContents content={post.content} />
 
-                    <div className="story-body rendered-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(post.content) }} />
+                    <div className="story-body rendered-content ql-editor" dangerouslySetInnerHTML={{ __html: post.content }} style={{ position: 'relative' }} />
+
+                    {/* Visual Overlays for Highlights */}
+                    {highlights.map(h => (
+                        <div key={h.id} style={{
+                            position: 'absolute',
+                            top: h.top,
+                            left: h.left,
+                            width: h.width,
+                            height: h.height,
+                            backgroundColor: 'rgba(255, 204, 0, 0.3)',
+                            pointerEvents: 'none',
+                            zIndex: 1,
+                            borderRadius: '2px'
+                        }} />
+                    ))}
+
+                    {/* Popover for selected text */}
+                    {selectionRect && selectedText && (
+                        <div style={{
+                            position: 'absolute',
+                            top: selectionRect.top - 40,
+                            left: selectionRect.left + (selectionRect.width / 2) - 60,
+                            backgroundColor: 'var(--bg-secondary)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            borderRadius: '8px',
+                            padding: '4px 8px',
+                            display: 'flex',
+                            gap: '8px',
+                            zIndex: 1000,
+                            animation: 'fadeIn 0.2s ease-out'
+                        }}>
+                            <button onClick={handleApplyHighlight} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-color)', fontSize: '12px', fontWeight: 500, padding: '4px' }}>
+                                <Highlighter size={14} style={{ color: '#FFB800' }} /> Highlight
+                            </button>
+                            <div style={{ width: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
+                            <button onClick={handleShareHighlight} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-color)', fontSize: '12px', fontWeight: 500, padding: '4px' }}>
+                                <Twitter size={14} style={{ color: '#1DA1F2' }} /> Share
+                            </button>
+
+                            {/* Tooltip arrow */}
+                            <div style={{
+                                position: 'absolute',
+                                bottom: '-4px',
+                                left: '50%',
+                                transform: 'translateX(-50%) rotate(45deg)',
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: 'var(--bg-secondary)',
+                                borderRight: '1px solid rgba(0,0,0,0.05)',
+                                borderBottom: '1px solid rgba(0,0,0,0.05)',
+                            }} />
+                        </div>
+                    )}
 
                     {tags.length > 0 && (
                         <div className="story-tags">

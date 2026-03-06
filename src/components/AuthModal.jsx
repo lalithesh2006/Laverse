@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, ArrowRight, CheckCircle } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signup' }) => {
     const [mode, setMode] = useState(initialMode);
@@ -17,44 +18,31 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signup' }) => {
         fullName: ''
     });
 
+    const { signIn } = useAuth();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
-        // Demo mode — simulate success without real Supabase
-        if (!isSupabaseConfigured) {
-            await new Promise(resolve => setTimeout(resolve, 800));
-            setSuccess(true);
-            setLoading(false);
-            return;
-        }
-
         try {
             if (mode === 'signup') {
-                const { error } = await supabase.auth.signUp({
-                    email: formData.email,
-                    password: formData.password,
-                    options: {
-                        data: {
-                            full_name: formData.fullName
-                        }
-                    }
-                });
-                if (error) throw error;
+                const response = await api.auth.signup(
+                    formData.email,
+                    formData.password,
+                    formData.fullName,
+                    formData.fullName.toLowerCase().replace(/\s+/g, '') + Math.floor(Math.random() * 1000)
+                );
+                signIn(response.user, response.token);
                 setSuccess(true);
             } else {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: formData.email,
-                    password: formData.password
-                });
-                if (error) throw error;
-                // On sign in, navigate to dashboard
+                const response = await api.auth.login(formData.email, formData.password);
+                signIn(response.user, response.token);
                 handleClose();
                 navigate('/dashboard');
             }
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Authentication failed");
         } finally {
             setLoading(false);
         }
@@ -80,27 +68,8 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signup' }) => {
     };
 
     const handleForgotPassword = async () => {
-        if (!formData.email) {
-            setError('Please enter your email address first.');
-            return;
-        }
-        if (!isSupabaseConfigured || !supabase) {
-            setError('Password reset requires Supabase to be configured.');
-            return;
-        }
-        setLoading(true);
-        setError(null);
-        try {
-            const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-                redirectTo: window.location.origin + '/dashboard'
-            });
-            if (error) throw error;
-            setResetSent(true);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
+        // Mocked out for custom backend unless email server is configured
+        setError("Password reset requires an email SMTP server configured on the custom node backend.");
     };
 
     const handleSuccessClick = () => {

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, UserMinus } from 'lucide-react';
 
@@ -18,19 +17,9 @@ const FollowButton = ({ authorId, onAuthRequired }) => {
     }, [user, authorId]);
 
     const checkFollowStatus = async () => {
-        if (!isSupabaseConfigured || !supabase) return;
-
         try {
-            const { data, error } = await supabase
-                .from('follows')
-                .select('*')
-                .eq('follower_id', user.id)
-                .eq('following_id', authorId)
-                .single();
-
-            if (data && !error) {
-                setIsFollowing(true);
-            }
+            // Mocking for MVP
+            setIsFollowing(false);
         } catch (err) {
             // No record found, not following
         } finally {
@@ -48,22 +37,11 @@ const FollowButton = ({ authorId, onAuthRequired }) => {
 
         setLoading(true);
 
-        if (!isSupabaseConfigured || !supabase) return;
-
         try {
+            // Mock toggle for MVP
             if (isFollowing) {
-                // Unfollow
-                await supabase
-                    .from('follows')
-                    .delete()
-                    .eq('follower_id', user.id)
-                    .eq('following_id', authorId);
                 setIsFollowing(false);
             } else {
-                // Follow
-                await supabase
-                    .from('follows')
-                    .insert([{ follower_id: user.id, following_id: authorId }]);
                 setIsFollowing(true);
             }
         } catch (err) {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { api } from '../lib/api';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const AuthorSpotlight = () => {
@@ -12,24 +12,20 @@ const AuthorSpotlight = () => {
     }, []);
 
     const fetchTopAuthors = async () => {
-        if (!supabase) return;
         try {
-            // Get authors with at least one published post, ordered by total reads
-            const { data, error } = await supabase
-                .from('posts')
-                .select('author_id, reads, profiles(id, full_name, username, avatar_url, bio)')
-                .eq('published', true);
+            // For MVP migration, we'll fetch general posts to derive some active authors
+            const data = await api.posts.getPosts({ limit: 50 });
 
-            if (error) throw error;
+            if (!data) return;
 
-            // Aggregate by author
+            // Aggregate by author locally
             const authorMap = {};
-            (data || []).forEach(post => {
-                const p = post.profiles;
+            data.forEach(post => {
+                const p = post.author_id;
                 if (!p) return;
-                if (!authorMap[post.author_id]) {
-                    authorMap[post.author_id] = {
-                        id: post.author_id,
+                if (!authorMap[p._id]) {
+                    authorMap[p._id] = {
+                        id: p._id,
                         name: p.full_name || p.username || 'Anonymous',
                         username: p.username || '',
                         avatar: p.avatar_url || '',
@@ -38,8 +34,8 @@ const AuthorSpotlight = () => {
                         reads: 0,
                     };
                 }
-                authorMap[post.author_id].posts += 1;
-                authorMap[post.author_id].reads += (post.reads || 0);
+                authorMap[p._id].posts += 1;
+                authorMap[p._id].reads += (post.reads || 0);
             });
 
             const sorted = Object.values(authorMap)

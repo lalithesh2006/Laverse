@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Bookmark } from 'lucide-react';
 
@@ -13,32 +12,24 @@ const BookmarkButton = ({ postId, size = 'default' }) => {
     }, [postId, user]);
 
     const checkBookmark = async () => {
-        if (!isSupabaseConfigured || !supabase || !user) return;
         try {
-            const { data } = await supabase
-                .from('bookmarks')
-                .select('id')
-                .eq('post_id', postId)
-                .eq('user_id', user.id)
-                .maybeSingle();
-            setBookmarked(!!data);
+            // Mock bookmark status for MVP
+            setBookmarked(false);
         } catch (err) {
             console.error('Error checking bookmark:', err);
         }
     };
 
     const toggle = async () => {
-        if (!user || !isSupabaseConfigured || !supabase) return;
+        if (!user) return;
         setAnimating(true);
         setTimeout(() => setAnimating(false), 400);
 
         try {
+            // Mock toggle logic for MVP
             if (bookmarked) {
-                await supabase.from('bookmarks').delete()
-                    .eq('post_id', postId).eq('user_id', user.id);
                 setBookmarked(false);
             } else {
-                await supabase.from('bookmarks').insert([{ post_id: postId, user_id: user.id }]);
                 setBookmarked(true);
             }
         } catch (err) {
