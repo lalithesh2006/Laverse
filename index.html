@@ -1,13 +1,49 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>la-verse</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="La'verse — A beautiful platform for writers and readers. Share your stories with the world." />
+  <meta name="theme-color" content="#2C3E50" />
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Prism.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" />
+
+  <!-- Google Fonts for Premium Categories -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+
+  <title>La'verse — Stories That Move You</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+
+  <!-- Prism.js -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
+
+  <!-- Service Worker Registration (Disabled during development locally) -->
+  <script>
+    if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => { });
+      });
+    } else if ('serviceWorker' in navigator && window.location.hostname === 'localhost') {
+      // Unregister any existing service worker on localhost
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+  </script>
+</body>
+
 </html>

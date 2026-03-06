@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, ArrowRight, CheckCircle } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
+const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signup' }) => {
     const [mode, setMode] = useState(initialMode);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
+    const [resetSent, setResetSent] = useState(false);
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -41,12 +44,14 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
                 if (error) throw error;
                 setSuccess(true);
             } else {
-                const { error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabase.auth.signInWithPassword({
                     email: formData.email,
                     password: formData.password
                 });
                 if (error) throw error;
-                onClose();
+                // On sign in, navigate to dashboard
+                handleClose();
+                navigate('/dashboard');
             }
         } catch (err) {
             setError(err.message);
@@ -55,11 +60,54 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
         }
     };
 
+    // Reset modal state whenever it opens
+    useEffect(() => {
+        if (isOpen) {
+            setMode(initialMode);
+            setSuccess(false);
+            setResetSent(false);
+            setError(null);
+            setFormData({ email: '', password: '', fullName: '' });
+        }
+    }, [isOpen]);
+
     const handleClose = () => {
         setSuccess(false);
+        setResetSent(false);
         setError(null);
         setFormData({ email: '', password: '', fullName: '' });
         onClose();
+    };
+
+    const handleForgotPassword = async () => {
+        if (!formData.email) {
+            setError('Please enter your email address first.');
+            return;
+        }
+        if (!isSupabaseConfigured || !supabase) {
+            setError('Password reset requires Supabase to be configured.');
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+                redirectTo: window.location.origin + '/dashboard'
+            });
+            if (error) throw error;
+            setResetSent(true);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSuccessClick = () => {
+        const isNewUser = mode === 'signup';
+        handleClose();
+        if (onSuccess) onSuccess(isNewUser);
+        navigate('/dashboard');
     };
 
     if (!isOpen) return null;
@@ -89,8 +137,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
                                     ? `Your account has been created successfully, ${formData.fullName || 'Writer'}! Check your email to confirm.`
                                     : 'You have signed in successfully.'}
                             </p>
-                            <button className="btn-primary w-full" onClick={handleClose}>
-                                Start Exploring
+                            <button className="btn-primary w-full" onClick={handleSuccessClick}>
+                                Go to Dashboard
                             </button>
                         </div>
                     ) : (
@@ -151,6 +199,21 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
                                 </div>
 
                                 {error && <div className="auth-error">{error}</div>}
+                                {resetSent && <div className="auth-success" style={{ background: '#d4edda', color: '#155724', padding: '10px 14px', borderRadius: '8px', fontSize: '14px', marginBottom: '12px' }}>Password reset link sent! Check your email.</div>}
+
+                                {mode === 'signin' && (
+                                    <div style={{ textAlign: 'right', marginBottom: '12px' }}>
+                                        <button
+                                            type="button"
+                                            className="text-btn"
+                                            onClick={handleForgotPassword}
+                                            disabled={loading}
+                                            style={{ fontSize: '13px' }}
+                                        >
+                                            Forgot Password?
+                                        </button>
+                                    </div>
+                                )}
 
                                 <button type="submit" className="btn-primary w-full" disabled={loading}>
                                     {loading ? 'Processing...' : (mode === 'signup' ? 'Create Account' : 'Sign In')}

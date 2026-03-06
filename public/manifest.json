@@ -1,0 +1,21 @@
+{
+    "name": "La'verse — Stories That Move You",
+    "short_name": "La'verse",
+    "description": "A beautiful blogging platform for writers and readers",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#FCF9F5",
+    "theme_color": "#2C3E50",
+    "icons": [
+        {
+            "src": "/logo192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/logo512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
