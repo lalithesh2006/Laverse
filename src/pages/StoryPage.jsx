@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,12 @@ import TipAuthorLink from '../components/TipAuthorLink';
 import ReadingProgressBar from '../components/ReadingProgressBar';
 import EmojiReactions from '../components/EmojiReactions';
 import { trackReading } from '../components/ReadingHistory';
+import WordLookup from '../components/WordLookup';
+import StoryNotes from '../components/StoryNotes';
+import StoryInsights from '../components/StoryInsights';
+import VocabBuilder from '../components/VocabBuilder';
+import ZenMode from '../components/ZenMode';
+import SmartQuotes from '../components/SmartQuotes';
 
 const StoryPage = () => {
     const { id } = useParams();
@@ -27,6 +33,7 @@ const StoryPage = () => {
     const [tags, setTags] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const storyBodyRef = useRef(null);
 
     // Text Highlighting State
     const [selectionRect, setSelectionRect] = useState(null);
@@ -178,6 +185,7 @@ const StoryPage = () => {
                                 <Trash2 size={18} />
                             </button>
                         )}
+                        <ZenMode title={post.title} content={post.content} />
                         <BookmarkButton postId={post._id} />
                         <LikeButton postId={post._id} />
                         <ShareButtons title={post.title} />
@@ -227,7 +235,14 @@ const StoryPage = () => {
                     <ReadingToolbar title={post.title} content={post.content} />
                     <TableOfContents content={post.content} />
 
-                    <div className="story-body rendered-content ql-editor" dangerouslySetInnerHTML={{ __html: post.content }} style={{ position: 'relative' }} />
+                    <div
+                        ref={storyBodyRef}
+                        className="story-body rendered-content ql-editor"
+                        dangerouslySetInnerHTML={{ __html: post.content }}
+                        style={{ position: 'relative' }}
+                    />
+                    {/* AI: Word Lookup Panel — attached to story body */}
+                    <WordLookup containerRef={storyBodyRef} />
 
                     {/* Visual Overlays for Highlights */}
                     {highlights.map(h => (
@@ -303,6 +318,14 @@ const StoryPage = () => {
                         <TipAuthorLink tipLink={author.tip_link} authorName={author.full_name || author.username} />
                     )}
                 </article>
+
+                {/* AI FEATURES PANEL */}
+                <div className="ai-features-panel">
+                    <StoryInsights content={post.content} title={post.title} />
+                    <SmartQuotes content={post.content} title={post.title} author={author?.full_name || author?.username} />
+                    <StoryNotes postId={post._id} postTitle={post.title} />
+                    <VocabBuilder />
+                </div>
 
                 {author && (
                     <div className="story-author-card">
