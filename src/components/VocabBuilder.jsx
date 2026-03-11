@@ -79,10 +79,10 @@ const VocabBuilder = () => {
     if (words.length === 0 && !open) return null;
 
     return (
-        <div style={{ border: '1px solid var(--border-color)', borderRadius: 16, background: 'var(--bg-secondary)', marginBottom: 24, overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--color-border)', borderRadius: 16, background: 'var(--color-white)', marginBottom: 24, overflow: 'hidden' }}>
             <button onClick={() => { setOpen(!open); if (!open) load(); }} style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-color)'
+                padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-primary)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <BookMarked size={18} style={{ color: '#C3A6FF' }} />
@@ -101,17 +101,17 @@ const VocabBuilder = () => {
                     {quizMode && quizWord ? (
                         // Quiz Mode
                         <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                            <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>VOCAB QUIZ · Word {quizIndex + 1}</p>
+                            <p style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginBottom: 8 }}>VOCAB QUIZ · Word {quizIndex + 1}</p>
                             <h3 style={{ fontSize: 32, fontWeight: 800, marginBottom: 8 }}>{quizWord.word}</h3>
-                            {quizWord.partOfSpeech && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontStyle: 'italic' }}>{quizWord.partOfSpeech}</span>}
-                            <button onClick={() => speak(quizWord.word)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', marginLeft: 8 }}>
+                            {quizWord.partOfSpeech && <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>{quizWord.partOfSpeech}</span>}
+                            <button onClick={() => speak(quizWord.word)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', marginLeft: 8 }}>
                                 <Volume2 size={14} />
                             </button>
 
                             {!quizRevealed ? (
                                 <button onClick={() => setQuizRevealed(true)} style={{
                                     marginTop: 20, display: 'block', width: '100%', padding: '12px',
-                                    background: 'var(--primary-color)', color: 'white', border: 'none',
+                                    background: 'var(--color-primary)', color: 'white', border: 'none',
                                     borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 600
                                 }}>
                                     Reveal Definition
@@ -119,8 +119,8 @@ const VocabBuilder = () => {
                             ) : (
                                 <div style={{ marginTop: 16 }}>
                                     <p style={{
-                                        fontSize: 14, color: 'var(--text-color)', lineHeight: 1.6,
-                                        padding: '12px 16px', background: 'var(--bg-primary)', borderRadius: 10, marginBottom: 16
+                                        fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.6,
+                                        padding: '12px 16px', background: 'var(--color-background)', borderRadius: 10, marginBottom: 16
                                     }}>
                                         {quizWord.definition}
                                     </p>
@@ -134,7 +134,7 @@ const VocabBuilder = () => {
                                     </div>
                                 </div>
                             )}
-                            <button onClick={() => setQuizMode(false)} style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13 }}>
+                            <button onClick={() => setQuizMode(false)} style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 13 }}>
                                 Exit Quiz
                             </button>
                         </div>
@@ -142,8 +142,8 @@ const VocabBuilder = () => {
                         <>
                             <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
                                 <div style={{ position: 'relative', flex: 1 }}>
-                                    <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                                    <input type="text" placeholder="Search your vocab..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: '100%', padding: '8px 8px 8px 30px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-color)', fontSize: 13, boxSizing: 'border-box' }} />
+                                    <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)' }} />
+                                    <input type="text" placeholder="Search your vocab..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: '100%', padding: '8px 8px 8px 30px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-background)', color: 'var(--color-text-primary)', fontSize: 13, boxSizing: 'border-box' }} />
                                 </div>
                                 {words.length >= 2 && (
                                     <button onClick={startQuiz} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#C3A6FF', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
@@ -153,24 +153,24 @@ const VocabBuilder = () => {
                             </div>
 
                             {words.length === 0 ? (
-                                <p style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center' }}>
+                                <p style={{ color: 'var(--color-text-secondary)', fontSize: 13, textAlign: 'center' }}>
                                     Double-click any word while reading → click "Save to Vocab" to build your list!
                                 </p>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 320, overflowY: 'auto' }}>
                                     {filtered.map(entry => (
-                                        <div key={entry.word} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: 'var(--bg-primary)', borderRadius: 10 }}>
+                                        <div key={entry.word} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: 'var(--color-background)', borderRadius: 10 }}>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                                     <span style={{ fontWeight: 700, fontSize: 15 }}>{entry.word}</span>
-                                                    {entry.partOfSpeech && <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontStyle: 'italic' }}>{entry.partOfSpeech}</span>}
-                                                    <button onClick={() => speak(entry.word)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 0 }}>
+                                                    {entry.partOfSpeech && <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>{entry.partOfSpeech}</span>}
+                                                    <button onClick={() => speak(entry.word)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 0 }}>
                                                         <Volume2 size={12} />
                                                     </button>
                                                 </div>
-                                                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>{entry.definition}</p>
+                                                <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.4, margin: 0 }}>{entry.definition}</p>
                                             </div>
-                                            <button onClick={() => deleteWord(entry.word)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 0, flexShrink: 0 }}>
+                                            <button onClick={() => deleteWord(entry.word)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 0, flexShrink: 0 }}>
                                                 <Trash2 size={13} />
                                             </button>
                                         </div>

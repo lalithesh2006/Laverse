@@ -58,15 +58,15 @@ const SmartQuotes = ({ content, title, author }) => {
     };
 
     return (
-        <div style={{ border: '1px solid var(--border-color)', borderRadius: 16, background: 'var(--bg-secondary)', marginBottom: 24, overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--color-border)', borderRadius: 16, background: 'var(--color-white)', marginBottom: 24, overflow: 'hidden' }}>
             <button onClick={() => setOpen(!open)} style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-color)'
+                padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-primary)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <Quote size={18} style={{ color: '#FFB800' }} />
                     <span style={{ fontWeight: 600, fontSize: 15 }}>Smart Quotes</span>
-                    <span style={{ fontSize: 11, padding: '2px 8px', background: 'var(--bg-primary)', borderRadius: 20, color: 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: 11, padding: '2px 8px', background: 'var(--color-background)', borderRadius: 20, color: 'var(--color-text-secondary)' }}>
                         {quotes.length} extracted
                     </span>
                 </div>
@@ -75,25 +75,25 @@ const SmartQuotes = ({ content, title, author }) => {
 
             {open && (
                 <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 4px', fontStyle: 'italic' }}>
+                    <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', margin: '0 0 4px', fontStyle: 'italic' }}>
                         AI-selected most shareable sentences from this story
                     </p>
                     {quotes.map((quote, i) => (
                         <div key={i} style={{
-                            padding: '16px 18px', background: 'var(--bg-primary)', borderRadius: 12,
-                            borderLeft: '4px solid var(--primary-color)', position: 'relative'
+                            padding: '16px 18px', background: 'var(--color-background)', borderRadius: 12,
+                            borderLeft: '4px solid var(--color-primary)', position: 'relative'
                         }}>
-                            <p style={{ fontSize: 15, fontStyle: 'italic', lineHeight: 1.6, color: 'var(--text-color)', margin: '0 0 12px' }}>
+                            <p style={{ fontSize: 15, fontStyle: 'italic', lineHeight: 1.6, color: 'var(--color-text-primary)', margin: '0 0 12px' }}>
                                 "{quote}"
                             </p>
-                            {author && <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 10px' }}>— {author}</p>}
+                            {author && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', margin: '0 0 10px' }}>— {author}</p>}
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <button onClick={() => copyQuote(quote, i)} style={{
                                     display: 'flex', alignItems: 'center', gap: 5,
-                                    background: copied === i ? '#4ECDC422' : 'var(--bg-secondary)',
-                                    border: `1px solid ${copied === i ? '#4ECDC4' : 'var(--border-color)'}`,
+                                    background: copied === i ? '#4ECDC422' : 'var(--color-white)',
+                                    border: `1px solid ${copied === i ? '#4ECDC4' : 'var(--color-border)'}`,
                                     borderRadius: 8, padding: '5px 12px', cursor: 'pointer',
-                                    color: copied === i ? '#4ECDC4' : 'var(--text-color)', fontSize: 12
+                                    color: copied === i ? '#4ECDC4' : 'var(--color-text-primary)', fontSize: 12
                                 }}>
                                     {copied === i ? <Check size={12} /> : <Copy size={12} />}
                                     {copied === i ? 'Copied!' : 'Copy'}

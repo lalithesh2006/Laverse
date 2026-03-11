@@ -51,9 +51,9 @@ const ZenMode = ({ title, content }) => {
         return (
             <button onClick={() => setActive(true)} style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+                background: 'var(--color-white)', border: '1px solid var(--color-border)',
                 borderRadius: 8, padding: '8px 14px', cursor: 'pointer',
-                color: 'var(--text-color)', fontSize: 13, fontWeight: 500
+                color: 'var(--color-text-primary)', fontSize: 13, fontWeight: 500
             }} title="Enter Zen Reading Mode (distraction-free)">
                 <Maximize2 size={14} /> Zen Mode
             </button>
@@ -69,7 +69,7 @@ const ZenMode = ({ title, content }) => {
         }}>
             {/* Progress bar */}
             <div style={{ height: 3, background: 'rgba(128,128,128,0.15)', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100000 }}>
-                <div style={{ height: '100%', width: `${progress}%`, background: 'var(--primary-color)', transition: 'width 0.3s' }} />
+                <div style={{ height: '100%', width: `${progress}%`, background: 'var(--color-primary)', transition: 'width 0.3s' }} />
             </div>
 
             {/* Top bar */}
@@ -106,14 +106,14 @@ const ZenMode = ({ title, content }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontSize: 12, opacity: 0.5 }}>Spacing:</span>
                         {[1.5, 1.8, 2.2].map(lh => (
-                            <button key={lh} onClick={() => setLineHeight(lh)} style={{ background: lineHeight === lh ? 'var(--primary-color)' : 'rgba(128,128,128,0.15)', border: 'none', borderRadius: 4, padding: '2px 10px', cursor: 'pointer', color: lineHeight === lh ? 'white' : theme.text, fontSize: 12 }}>
+                            <button key={lh} onClick={() => setLineHeight(lh)} style={{ background: lineHeight === lh ? 'var(--color-primary)' : 'rgba(128,128,128,0.15)', border: 'none', borderRadius: 4, padding: '2px 10px', cursor: 'pointer', color: lineHeight === lh ? 'white' : theme.text, fontSize: 12 }}>
                                 {lh}×
                             </button>
                         ))}
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                         {Object.entries(BG_THEMES).map(([key, t]) => (
-                            <button key={key} onClick={() => setBg(key)} style={{ background: t.bg, border: `2px solid ${bg === key ? 'var(--primary-color)' : 'rgba(128,128,128,0.3)'}`, borderRadius: 6, padding: '4px 10px', cursor: 'pointer', color: t.text, fontSize: 11, fontWeight: bg === key ? 700 : 400 }}>
+                            <button key={key} onClick={() => setBg(key)} style={{ background: t.bg, border: `2px solid ${bg === key ? 'var(--color-primary)' : 'rgba(128,128,128,0.3)'}`, borderRadius: 6, padding: '4px 10px', cursor: 'pointer', color: t.text, fontSize: 11, fontWeight: bg === key ? 700 : 400 }}>
                                 {t.name}
                             </button>
                         ))}

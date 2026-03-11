@@ -85,28 +85,28 @@ const WordLookup = ({ containerRef }) => {
     return (
         <div style={{
             position: 'absolute', top: position.top, left: position.left,
-            width: 320, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+            width: 320, background: 'var(--color-white)', border: '1px solid var(--color-border)',
             borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.18)', zIndex: 9999,
             padding: '20px 20px 16px', fontFamily: 'inherit'
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <BookOpen size={16} style={{ color: 'var(--primary-color)' }} />
-                    <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-secondary)' }}>Dictionary</span>
+                    <BookOpen size={16} style={{ color: 'var(--color-primary)' }} />
+                    <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--color-text-secondary)' }}>Dictionary</span>
                 </div>
-                <button onClick={() => setVisible(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 2 }}>
+                <button onClick={() => setVisible(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 2 }}>
                     <X size={16} />
                 </button>
             </div>
 
             {loading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', padding: '12px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text-secondary)', padding: '12px 0' }}>
                     <Loader size={16} className="spinner" /> Looking up <strong>"{word}"</strong>…
                 </div>
             )}
 
             {error && (
-                <div style={{ color: 'var(--text-secondary)', fontSize: 14, padding: '8px 0' }}>
+                <div style={{ color: 'var(--color-text-secondary)', fontSize: 14, padding: '8px 0' }}>
                     <span style={{ fontSize: 24 }}>🔍</span>
                     <p style={{ marginTop: 6 }}>{error}</p>
                     <p style={{ fontSize: 12, marginTop: 4 }}>Try double-clicking a single English word.</p>
@@ -116,16 +116,16 @@ const WordLookup = ({ containerRef }) => {
             {data && !loading && (
                 <>
                     <div style={{ marginBottom: 12 }}>
-                        <h3 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-color)', margin: 0 }}>{data.word}</h3>
+                        <h3 style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>{data.word}</h3>
                         {phonetic && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                                <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontStyle: 'italic' }}>{phonetic}</span>
+                                <span style={{ fontSize: 14, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>{phonetic}</span>
                                 {audioUrl && (
-                                    <button onClick={() => { const a = new Audio(audioUrl); a.play(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', padding: 2 }} title="Play pronunciation">
+                                    <button onClick={() => { const a = new Audio(audioUrl); a.play(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 2 }} title="Play pronunciation">
                                         <Volume2 size={14} />
                                     </button>
                                 )}
-                                <button onClick={() => speak(data.word)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 2 }} title="Speak">
+                                <button onClick={() => speak(data.word)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 2 }} title="Speak">
                                     <Volume2 size={14} />
                                 </button>
                             </div>
@@ -135,25 +135,25 @@ const WordLookup = ({ containerRef }) => {
                     <div style={{ maxHeight: 240, overflowY: 'auto', marginBottom: 12 }}>
                         {shownMeanings.map((m, i) => (
                             <div key={i} style={{ marginBottom: 12 }}>
-                                <span style={{ display: 'inline-block', padding: '2px 8px', background: 'var(--primary-color)', color: 'white', borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 6 }}>
+                                <span style={{ display: 'inline-block', padding: '2px 8px', background: 'var(--color-primary)', color: 'white', borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 6 }}>
                                     {m.partOfSpeech}
                                 </span>
                                 {m.definitions.slice(0, 2).map((d, j) => (
                                     <div key={j} style={{ marginBottom: 6 }}>
-                                        <p style={{ fontSize: 13, color: 'var(--text-color)', lineHeight: 1.5, margin: 0 }}>{j + 1}. {d.definition}</p>
-                                        {d.example && <p style={{ fontSize: 12, color: 'var(--text-secondary)', fontStyle: 'italic', margin: '4px 0 0', paddingLeft: 12, borderLeft: '2px solid var(--border-color)' }}>"{d.example}"</p>}
+                                        <p style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.5, margin: 0 }}>{j + 1}. {d.definition}</p>
+                                        {d.example && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontStyle: 'italic', margin: '4px 0 0', paddingLeft: 12, borderLeft: '2px solid var(--color-border)' }}>"{d.example}"</p>}
                                     </div>
                                 ))}
                                 {m.synonyms?.length > 0 && (
                                     <div style={{ marginTop: 4 }}>
-                                        <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Synonyms: </span>
-                                        <span style={{ fontSize: 11, color: 'var(--primary-color)' }}>{m.synonyms.slice(0, 5).join(', ')}</span>
+                                        <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600 }}>Synonyms: </span>
+                                        <span style={{ fontSize: 11, color: 'var(--color-primary)' }}>{m.synonyms.slice(0, 5).join(', ')}</span>
                                     </div>
                                 )}
                             </div>
                         ))}
                         {meanings.length > 2 && (
-                            <button onClick={() => setExpandMeanings(!expandMeanings)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, padding: 0 }}>
+                            <button onClick={() => setExpandMeanings(!expandMeanings)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, padding: 0 }}>
                                 {expandMeanings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                                 {expandMeanings ? 'Show less' : `+${meanings.length - 2} more meanings`}
                             </button>
@@ -161,9 +161,9 @@ const WordLookup = ({ containerRef }) => {
                     </div>
 
                     <button id="vocab-save-btn" onClick={saveToVocab} style={{
-                        display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-primary)',
-                        border: '1px solid var(--border-color)', borderRadius: 8, padding: '6px 12px',
-                        cursor: 'pointer', fontSize: 12, color: 'var(--text-color)', fontWeight: 500, width: '100%', justifyContent: 'center'
+                        display: 'flex', alignItems: 'center', gap: 6, background: 'var(--color-background)',
+                        border: '1px solid var(--color-border)', borderRadius: 8, padding: '6px 12px',
+                        cursor: 'pointer', fontSize: 12, color: 'var(--color-text-primary)', fontWeight: 500, width: '100%', justifyContent: 'center'
                     }}>
                         <Plus size={12} /> Save to Vocab
                     </button>

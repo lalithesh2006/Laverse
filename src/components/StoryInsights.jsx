@@ -68,15 +68,15 @@ const StoryInsights = ({ content, title }) => {
     if (!content || plainText.trim().length < 100) return null;
 
     return (
-        <div style={{ border: '1px solid var(--border-color)', borderRadius: 16, background: 'var(--bg-secondary)', marginBottom: 24, overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--color-border)', borderRadius: 16, background: 'var(--color-white)', marginBottom: 24, overflow: 'hidden' }}>
             <button onClick={() => setOpen(!open)} style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-color)'
+                padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-primary)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <BarChart2 size={18} style={{ color: 'var(--primary-color)' }} />
+                    <BarChart2 size={18} style={{ color: 'var(--color-primary)' }} />
                     <span style={{ fontWeight: 600, fontSize: 15 }}>AI Story Insights</span>
-                    <span style={{ fontSize: 11, padding: '2px 8px', background: 'var(--bg-primary)', borderRadius: 20, color: 'var(--text-secondary)' }}>Client-side AI</span>
+                    <span style={{ fontSize: 11, padding: '2px 8px', background: 'var(--color-background)', borderRadius: 20, color: 'var(--color-text-secondary)' }}>Client-side AI</span>
                 </div>
                 {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
@@ -84,7 +84,7 @@ const StoryInsights = ({ content, title }) => {
             {open && (
                 <div style={{ padding: '0 20px 20px' }}>
                     {/* Sentiment */}
-                    <div style={{ marginBottom: 20, padding: '16px', background: 'var(--bg-primary)', borderRadius: 12 }}>
+                    <div style={{ marginBottom: 20, padding: '16px', background: 'var(--color-background)', borderRadius: 12 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                             <Zap size={16} style={{ color: sentiment.color }} />
                             <span style={{ fontWeight: 600, fontSize: 14 }}>Sentiment Analysis</span>
@@ -94,9 +94,9 @@ const StoryInsights = ({ content, title }) => {
                             <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                                     <span style={{ fontWeight: 700, color: sentiment.color }}>{sentiment.label}</span>
-                                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{sentiment.score}% positive</span>
+                                    <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{sentiment.score}% positive</span>
                                 </div>
-                                <div style={{ height: 8, background: 'var(--bg-secondary)', borderRadius: 8, overflow: 'hidden' }}>
+                                <div style={{ height: 8, background: 'var(--color-white)', borderRadius: 8, overflow: 'hidden' }}>
                                     <div style={{ width: `${sentiment.score}%`, height: '100%', background: sentiment.color, borderRadius: 8, transition: 'width 0.6s ease' }} />
                                 </div>
                             </div>
@@ -108,9 +108,9 @@ const StoryInsights = ({ content, title }) => {
                     </div>
 
                     {/* Reading stats */}
-                    <div style={{ marginBottom: 20, padding: '16px', background: 'var(--bg-primary)', borderRadius: 12 }}>
+                    <div style={{ marginBottom: 20, padding: '16px', background: 'var(--color-background)', borderRadius: 12 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                            <AlignLeft size={16} style={{ color: 'var(--primary-color)' }} />
+                            <AlignLeft size={16} style={{ color: 'var(--color-primary)' }} />
                             <span style={{ fontWeight: 600, fontSize: 14 }}>Text Statistics</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
@@ -122,9 +122,9 @@ const StoryInsights = ({ content, title }) => {
                                 { label: 'Level', value: stats.level },
                                 { label: 'Avg Word Len', value: stats.avgWordLength + ' chars' },
                             ].map(s => (
-                                <div key={s.label} style={{ textAlign: 'center', padding: '10px 6px', background: 'var(--bg-secondary)', borderRadius: 8 }}>
-                                    <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-color)' }}>{s.value}</div>
-                                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>{s.label}</div>
+                                <div key={s.label} style={{ textAlign: 'center', padding: '10px 6px', background: 'var(--color-white)', borderRadius: 8 }}>
+                                    <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--color-text-primary)' }}>{s.value}</div>
+                                    <div style={{ fontSize: 10, color: 'var(--color-text-secondary)', marginTop: 2 }}>{s.label}</div>
                                 </div>
                             ))}
                         </div>
@@ -132,7 +132,7 @@ const StoryInsights = ({ content, title }) => {
 
                     {/* Key phrases */}
                     {keyPhrases.length > 0 && (
-                        <div style={{ marginBottom: 20, padding: '16px', background: 'var(--bg-primary)', borderRadius: 12 }}>
+                        <div style={{ marginBottom: 20, padding: '16px', background: 'var(--color-background)', borderRadius: 12 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                                 <MessageSquare size={16} style={{ color: '#A8E6CF' }} />
                                 <span style={{ fontWeight: 600, fontSize: 14 }}>Key Sentences</span>
@@ -140,8 +140,8 @@ const StoryInsights = ({ content, title }) => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                 {keyPhrases.map((p, i) => (
                                     <p key={i} style={{
-                                        fontSize: 13, color: 'var(--text-color)', lineHeight: 1.5,
-                                        padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 8,
+                                        fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.5,
+                                        padding: '8px 12px', background: 'var(--color-white)', borderRadius: 8,
                                         borderLeft: `3px solid ${'#4ECDC4,#FFB800,#C3A6FF'.split(',')[i]}`,
                                         margin: 0, fontStyle: 'italic'
                                     }}>
@@ -154,7 +154,7 @@ const StoryInsights = ({ content, title }) => {
 
                     {/* Word frequency */}
                     {wordFreq.length > 0 && (
-                        <div style={{ padding: '16px', background: 'var(--bg-primary)', borderRadius: 12 }}>
+                        <div style={{ padding: '16px', background: 'var(--color-background)', borderRadius: 12 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                                 <TrendingUp size={16} style={{ color: '#C3A6FF' }} />
                                 <span style={{ fontWeight: 600, fontSize: 14 }}>Most Used Words</span>
@@ -164,7 +164,7 @@ const StoryInsights = ({ content, title }) => {
                                     <span key={w} style={{
                                         padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                                         background: `rgba(var(--primary-rgb, 108,99,255), ${Math.min(0.9, 0.2 + count * 0.08)})`,
-                                        color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: 4
+                                        color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: 4
                                     }}>
                                         {w} <span style={{ opacity: 0.6, fontWeight: 400 }}>×{count}</span>
                                     </span>
