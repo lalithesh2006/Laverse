@@ -13,9 +13,7 @@ const RelatedPosts = ({ currentPostId, category, tags = [] }) => {
 
     const fetchRelated = async () => {
         try {
-            // Fetch all posts, then filter by category locally for the MVP migration
             const data = await api.posts.getPosts({ category, limit: 4 });
-            // Filter out current post
             const related = data ? data.filter(p => p._id !== currentPostId).slice(0, 3) : [];
             setPosts(related);
         } catch (err) {

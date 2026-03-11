@@ -54,7 +54,7 @@ const Dashboard = () => {
         }
 
         try {
-            const data = await api.posts.getUserPosts(user.id);
+            const data = await api.posts.getMyPosts();
             setPosts(data || []);
         } catch (err) {
             console.error('Error fetching posts:', err);
@@ -66,10 +66,11 @@ const Dashboard = () => {
     const fetchBookmarks = async () => {
         if (!user) return;
         try {
-            // Bookmarks are out of scope for the current MVP migration logic
-            setBookmarks([]);
+            const data = await api.bookmarks.getMyBookmarks();
+            setBookmarks(data || []);
         } catch (err) {
             console.error('Error fetching bookmarks:', err);
+            setBookmarks([]);
         }
     };
 
@@ -315,7 +316,7 @@ const Dashboard = () => {
                                                 <h3>{post.title}</h3>
                                                 {post.excerpt && <p>{post.excerpt}</p>}
                                                 <span className="post-date">
-                                                    {new Date(post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                    {new Date(post.createdAt || post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                                                 </span>
                                             </div>
                                             <div className="post-list-actions">
@@ -403,7 +404,7 @@ const Dashboard = () => {
                                                 <h3>{post.title}</h3>
                                                 {post.excerpt && <p>{post.excerpt}</p>}
                                                 <span className="post-date">
-                                                    {new Date(post.created_at).toLocaleDateString()}
+                                                    {new Date(post.createdAt || post.created_at).toLocaleDateString()}
                                                 </span>
                                             </div>
                                             <div className="post-list-actions">

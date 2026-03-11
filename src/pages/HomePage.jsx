@@ -44,6 +44,7 @@ const HomePage = ({ onAuthClick }) => {
 
     useEffect(() => {
         fetchStories();
+        fetchStats();
     }, [activeTab, user]);
 
     const fetchStories = async () => {
@@ -92,6 +93,36 @@ const HomePage = ({ onAuthClick }) => {
             setTrendingStories([]);
         } finally {
             setLoadingStories(false);
+        }
+    };
+
+    const fetchStats = async () => {
+        try {
+            const [stats, counts] = await Promise.all([
+                api.posts.getStats().catch(() => null),
+                api.posts.getCategoryCounts().catch(() => ({})),
+            ]);
+
+            if (stats) {
+                const updatedDate = stats.lastUpdated
+                    ? new Date(stats.lastUpdated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                    : 'Recently';
+                setArchiveStats([
+                    { label: 'Total Stories', value: stats.totalStories?.toString() || '0' },
+                    { label: 'Topics', value: stats.totalCategories?.toString() || '0' },
+                    { label: 'Writers', value: stats.totalWriters?.toString() || '0' },
+                    { label: 'Updated', value: updatedDate },
+                ]);
+            }
+
+            if (counts && Object.keys(counts).length > 0) {
+                setTopics(prev => prev.map(topic => ({
+                    ...topic,
+                    count: (counts[topic.title] || 0).toString(),
+                })));
+            }
+        } catch (err) {
+            console.error('Error fetching stats:', err);
         }
     };
 
@@ -271,7 +302,7 @@ const HomePage = ({ onAuthClick }) => {
                     </div>
 
                     <div className="topics-grid">
-                        {topics.filter(t => t.count !== '0').map(topic => (
+                        {topics.map(topic => (
                             <Link to={`/archives?category=${topic.title}`} key={topic.id} className={`topic-card ${topic.variant}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                 <div className="topic-icon">
                                     <topic.icon size={28} />

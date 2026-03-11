@@ -13,7 +13,7 @@ const AuthorSpotlight = () => {
 
     const fetchTopAuthors = async () => {
         try {
-            // For MVP migration, we'll fetch general posts to derive some active authors
+            // Fetch posts to derive active authors from
             const data = await api.posts.getPosts({ limit: 50 });
 
             if (!data) return;

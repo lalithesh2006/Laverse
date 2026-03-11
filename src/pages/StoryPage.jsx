@@ -173,13 +173,13 @@ const StoryPage = () => {
                         <ArrowLeft size={18} /> Back
                     </button>
                     <div className="story-nav-actions">
-                        {(user?.id === post.author_id || profile?.is_admin) && (
+                        {(user?.id === post.author_id?._id?.toString() || user?.id === post.author_id?.toString() || profile?.is_admin) && (
                             <button onClick={handleDelete} className="btn-icon btn-danger" title="Delete Post">
                                 <Trash2 size={18} />
                             </button>
                         )}
-                        <BookmarkButton postId={post.id} />
-                        <LikeButton postId={post.id} />
+                        <BookmarkButton postId={post._id} />
+                        <LikeButton postId={post._id} />
                         <ShareButtons title={post.title} />
                     </div>
                 </div>
@@ -292,12 +292,12 @@ const StoryPage = () => {
                     )}
 
                     <div className="story-engagement-bar">
-                        <LikeButton postId={post.id} />
-                        <BookmarkButton postId={post.id} />
+                        <LikeButton postId={post._id} />
+                        <BookmarkButton postId={post._id} />
                         <ShareButtons title={post.title} />
                     </div>
 
-                    <EmojiReactions postId={post.id} />
+                    <EmojiReactions postId={post._id} />
 
                     {author?.tip_link && (
                         <TipAuthorLink tipLink={author.tip_link} authorName={author.full_name || author.username} />
@@ -326,8 +326,8 @@ const StoryPage = () => {
                     </div>
                 )}
 
-                <RelatedPosts currentPostId={post.id} category={post.category} tags={tags.map(t => t.name)} />
-                <Comments postId={post.id} />
+                <RelatedPosts currentPostId={post._id} category={post.category} tags={tags.map(t => t.name)} />
+                <Comments postId={post._id} />
             </div>
         </div>
     );

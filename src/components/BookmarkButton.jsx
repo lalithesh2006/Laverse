@@ -1,39 +1,46 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Bookmark } from 'lucide-react';
+import { api } from '../lib/api';
 
 const BookmarkButton = ({ postId, size = 'default' }) => {
     const { user } = useAuth();
     const [bookmarked, setBookmarked] = useState(false);
     const [animating, setAnimating] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (user) checkBookmark();
+        if (user && postId) checkBookmark();
+        else setBookmarked(false);
     }, [postId, user]);
 
     const checkBookmark = async () => {
         try {
-            // Mock bookmark status for MVP
-            setBookmarked(false);
+            const data = await api.bookmarks.getStatus(postId);
+            setBookmarked(data.bookmarked ?? false);
         } catch (err) {
-            console.error('Error checking bookmark:', err);
+            setBookmarked(false);
         }
     };
 
     const toggle = async () => {
-        if (!user) return;
+        if (!user || loading) return;
+
         setAnimating(true);
+        setLoading(true);
         setTimeout(() => setAnimating(false), 400);
 
+        // Optimistic update
+        const wasBookmarked = bookmarked;
+        setBookmarked(!wasBookmarked);
+
         try {
-            // Mock toggle logic for MVP
-            if (bookmarked) {
-                setBookmarked(false);
-            } else {
-                setBookmarked(true);
-            }
+            const data = await api.bookmarks.toggle(postId);
+            setBookmarked(data.bookmarked);
         } catch (err) {
-            console.error('Error toggling bookmark:', err);
+            setBookmarked(wasBookmarked); // revert
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -41,6 +48,7 @@ const BookmarkButton = ({ postId, size = 'default' }) => {
         <button
             className={`bookmark-btn ${bookmarked ? 'bookmarked' : ''} ${animating ? 'bookmark-animate' : ''} bookmark-${size}`}
             onClick={toggle}
+            disabled={loading}
             title={user ? (bookmarked ? 'Remove bookmark' : 'Save for later') : 'Sign in to bookmark'}
         >
             <Bookmark size={size === 'sm' ? 16 : 20} fill={bookmarked ? 'currentColor' : 'none'} />

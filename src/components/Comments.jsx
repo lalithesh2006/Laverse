@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
 import { timeAgo } from '../lib/utils';
 import { MessageCircle, Reply, Trash2, Send, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -18,11 +19,13 @@ const Comments = ({ postId }) => {
     }, [postId]);
 
     const fetchComments = async () => {
+        setLoading(true);
         try {
-            // Mock empty comments array for MVP
-            setComments([]);
+            const data = await api.comments.getComments(postId);
+            setComments(data || []);
         } catch (err) {
             console.error('Error fetching comments:', err);
+            setComments([]);
         } finally {
             setLoading(false);
         }
@@ -34,41 +37,29 @@ const Comments = ({ postId }) => {
 
         setSubmitting(true);
         try {
-            // Mock adding a comment/reply
-            const newMockComment = {
-                id: Date.now().toString(),
-                post_id: postId,
-                author_id: user.id,
-                parent_id: parentId,
-                content: content.trim(),
-                created_at: new Date().toISOString(),
-                profiles: profile,
-                replies: []
-            };
+            const created = await api.comments.createComment(postId, content.trim(), parentId);
 
             if (parentId) {
-                // Find parent and add reply
                 setComments(prev => {
-                    const addReplyToNode = (nodes) => {
-                        return nodes.map(node => {
-                            if (node.id === parentId) {
-                                return { ...node, replies: [...(node.replies || []), newMockComment] };
-                            } else if (node.replies) {
-                                return { ...node, replies: addReplyToNode(node.replies) };
-                            }
-                            return node;
-                        });
-                    };
+                    const addReplyToNode = (nodes) => nodes.map(node => {
+                        if (node._id?.toString() === parentId || node.id === parentId) {
+                            return { ...node, replies: [...(node.replies || []), created] };
+                        } else if (node.replies) {
+                            return { ...node, replies: addReplyToNode(node.replies) };
+                        }
+                        return node;
+                    });
                     return addReplyToNode(prev);
                 });
                 setReplyContent('');
                 setReplyingTo(null);
             } else {
-                setComments(prev => [...prev, newMockComment]);
+                setComments(prev => [...prev, { ...created, replies: [] }]);
                 setNewComment('');
             }
         } catch (err) {
             console.error('Error adding comment:', err);
+            alert('Failed to post comment. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -77,17 +68,16 @@ const Comments = ({ postId }) => {
     const handleDelete = async (commentId) => {
         if (!confirm('Delete this comment?')) return;
         try {
+            await api.comments.deleteComment(commentId);
             setComments(prev => {
-                const removeNode = (nodes) => {
-                    return nodes.filter(n => n.id !== commentId).map(n => ({
-                        ...n,
-                        replies: n.replies ? removeNode(n.replies) : []
-                    }));
-                };
+                const removeNode = (nodes) =>
+                    nodes.filter(n => (n._id?.toString() !== commentId && n.id !== commentId))
+                         .map(n => ({ ...n, replies: n.replies ? removeNode(n.replies) : [] }));
                 return removeNode(prev);
             });
         } catch (err) {
             console.error('Error deleting comment:', err);
+            alert('Failed to delete comment.');
         }
     };
 
@@ -95,79 +85,84 @@ const Comments = ({ postId }) => {
         setExpandedReplies(prev => ({ ...prev, [commentId]: !prev[commentId] }));
     };
 
-    const renderComment = (comment, isReply = false) => (
-        <div key={comment.id} className={`comment ${isReply ? 'comment-reply' : ''}`}>
-            <div className="comment-header">
-                <div className="comment-author">
-                    {comment.profiles?.avatar_url ? (
-                        <img src={comment.profiles.avatar_url} alt="" className="comment-avatar" />
-                    ) : (
-                        <div className="comment-avatar-fallback">
-                            {(comment.profiles?.full_name || 'A')[0].toUpperCase()}
+    const renderComment = (comment, isReply = false) => {
+        const cId = comment._id?.toString() || comment.id;
+        const authorProfile = comment.profiles || comment.author_id;
+        const isOwner = user && (user.id === (comment.author_id?._id?.toString() || comment.author_id));
+
+        return (
+            <div key={cId} className={`comment ${isReply ? 'comment-reply' : ''}`}>
+                <div className="comment-header">
+                    <div className="comment-author">
+                        {authorProfile?.avatar_url ? (
+                            <img src={authorProfile.avatar_url} alt="" className="comment-avatar" />
+                        ) : (
+                            <div className="comment-avatar-fallback">
+                                {(authorProfile?.full_name || 'A')[0].toUpperCase()}
+                            </div>
+                        )}
+                        <div>
+                            <span className="comment-name">{authorProfile?.full_name || authorProfile?.username || 'Anonymous'}</span>
+                            <span className="comment-time">{timeAgo(comment.createdAt || comment.created_at)}</span>
                         </div>
-                    )}
-                    <div>
-                        <span className="comment-name">{comment.profiles?.full_name || comment.profiles?.username || 'Anonymous'}</span>
-                        <span className="comment-time">{timeAgo(comment.created_at)}</span>
+                    </div>
+                    <div className="comment-actions">
+                        {user && !isReply && (
+                            <button className="comment-action-btn" onClick={() => { setReplyingTo(cId); setReplyContent(''); }}>
+                                <Reply size={14} /> Reply
+                            </button>
+                        )}
+                        {isOwner && (
+                            <button className="comment-action-btn comment-delete" onClick={() => handleDelete(cId)}>
+                                <Trash2 size={14} />
+                            </button>
+                        )}
                     </div>
                 </div>
-                <div className="comment-actions">
-                    {user && !isReply && (
-                        <button className="comment-action-btn" onClick={() => { setReplyingTo(comment.id); setReplyContent(''); }}>
-                            <Reply size={14} /> Reply
+                <p className="comment-content">{comment.content}</p>
+
+                {comment.replies && comment.replies.length > 0 && (
+                    <>
+                        <button className="show-replies-btn" onClick={() => toggleReplies(cId)}>
+                            {expandedReplies[cId] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
                         </button>
-                    )}
-                    {user && user.id === comment.author_id && (
-                        <button className="comment-action-btn comment-delete" onClick={() => handleDelete(comment.id)}>
-                            <Trash2 size={14} />
-                        </button>
-                    )}
-                </div>
+                        {expandedReplies[cId] && (
+                            <div className="replies-list">
+                                {comment.replies.map(reply => renderComment(reply, true))}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {replyingTo === cId && (
+                    <div className="reply-form">
+                        <textarea
+                            placeholder="Write a reply..."
+                            value={replyContent}
+                            onChange={e => setReplyContent(e.target.value)}
+                            rows={2}
+                        />
+                        <div className="reply-form-actions">
+                            <button className="btn-primary btn-sm" onClick={() => handleSubmitComment(cId)} disabled={submitting}>
+                                <Send size={14} /> {submitting ? 'Sending...' : 'Reply'}
+                            </button>
+                            <button className="btn-secondary btn-sm" onClick={() => setReplyingTo(null)}>Cancel</button>
+                        </div>
+                    </div>
+                )}
             </div>
-            <p className="comment-content">{comment.content}</p>
+        );
+    };
 
-            {/* Replies */}
-            {comment.replies && comment.replies.length > 0 && (
-                <>
-                    <button className="show-replies-btn" onClick={() => toggleReplies(comment.id)}>
-                        {expandedReplies[comment.id] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                        {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
-                    </button>
-                    {expandedReplies[comment.id] && (
-                        <div className="replies-list">
-                            {comment.replies.map(reply => renderComment(reply, true))}
-                        </div>
-                    )}
-                </>
-            )}
-
-            {/* Reply form */}
-            {replyingTo === comment.id && (
-                <div className="reply-form">
-                    <textarea
-                        placeholder="Write a reply..."
-                        value={replyContent}
-                        onChange={e => setReplyContent(e.target.value)}
-                        rows={2}
-                    />
-                    <div className="reply-form-actions">
-                        <button className="btn-primary btn-sm" onClick={() => handleSubmitComment(comment.id)} disabled={submitting}>
-                            <Send size={14} /> {submitting ? 'Sending...' : 'Reply'}
-                        </button>
-                        <button className="btn-secondary btn-sm" onClick={() => setReplyingTo(null)}>Cancel</button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+    const totalCount = comments.reduce((sum, c) => sum + 1 + (c.replies?.length || 0), 0);
 
     return (
         <div className="comments-section">
             <h3 className="comments-title">
-                <MessageCircle size={22} /> Comments ({comments.reduce((sum, c) => sum + 1 + (c.replies?.length || 0), 0)})
+                <MessageCircle size={22} /> Comments ({totalCount})
             </h3>
 
-            {/* Add comment form */}
             {user ? (
                 <div className="comment-form">
                     <div className="comment-form-avatar">
@@ -186,7 +181,11 @@ const Comments = ({ postId }) => {
                             onChange={e => setNewComment(e.target.value)}
                             rows={3}
                         />
-                        <button className="btn-primary btn-sm" onClick={() => handleSubmitComment(null)} disabled={submitting || !newComment.trim()}>
+                        <button
+                            className="btn-primary btn-sm"
+                            onClick={() => handleSubmitComment(null)}
+                            disabled={submitting || !newComment.trim()}
+                        >
                             <Send size={14} /> {submitting ? 'Posting...' : 'Post Comment'}
                         </button>
                     </div>
@@ -197,9 +196,8 @@ const Comments = ({ postId }) => {
                 </div>
             )}
 
-            {/* Comments list */}
             {loading ? (
-                <div className="comments-loading"><div className="spinner-sm"></div> Loading comments...</div>
+                <div className="comments-loading"><div className="spinner-sm" /> Loading comments...</div>
             ) : comments.length === 0 ? (
                 <div className="comments-empty">
                     <MessageCircle size={32} />

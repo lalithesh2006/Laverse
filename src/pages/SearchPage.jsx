@@ -38,12 +38,12 @@ const SearchPage = () => {
         setLoading(true);
 
         try {
-            const data = await api.posts.getPosts({
-                search: query.trim(),
-                category: category !== 'All' ? category : undefined,
-                sort: sortBy
-            });
+            const params = {};
+            if (query.trim()) params.search = query.trim();
+            if (category !== 'All') params.category = category;
+            if (sortBy) params.sortBy = sortBy;
 
+            const data = await api.posts.getPosts(params);
             setResults(data || []);
         } catch (error) {
             console.error('Error searching:', error);
